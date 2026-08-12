@@ -4,9 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Relatórios - Setor de TI</title>
-
+    <title>Redefinir senha - Setor de TI</title>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 
@@ -15,54 +13,45 @@
 <div class="layout">
 
     <aside class="sidebar">
-
         <h2>Setor de TI</h2>
 
         <nav>
             <a href="../dashboard/">Dashboard</a>
             <a href="../chamados/">Chamados</a>
             <a href="../chamados/novo.php">Novo chamado</a>
-            <a href="../usuarios/">Usuários</a>
-            <a href="./">Relatórios</a>
+            <a href="./">Usuários</a>
+            <a href="../relatorios/">Relatórios</a>
             <a href="../logout.php">Sair</a>
         </nav>
-
     </aside>
 
     <main class="content">
 
-        <h1>Relatórios</h1>
+        <h1>Redefinir senha</h1>
+        <p>Defina uma nova senha para o usuário.</p>
 
-        <p>Consulte informações sobre os chamados.</p>
-
-        <div class="form-card">
+        <form class="form-card">
 
             <div class="form-group">
-                <label>Data inicial</label>
-                <input type="date">
+                <label>Usuário</label>
+                <input type="text" value="João Silva" disabled>
             </div>
 
             <div class="form-group">
-                <label>Data final</label>
-                <input type="date">
+                <label>Nova senha</label>
+                <input type="password" required>
             </div>
 
             <div class="form-group">
-                <label>Status</label>
-
-                <select>
-                    <option>Todos</option>
-                    <option>Aberto</option>
-                    <option>Em andamento</option>
-                    <option>Resolvido</option>
-                </select>
+                <label>Confirmar nova senha</label>
+                <input type="password" required>
             </div>
 
             <button class="btn">
-                Gerar relatório
+                Redefinir senha
             </button>
 
-        </div>
+        </form>
 
     </main>
 
