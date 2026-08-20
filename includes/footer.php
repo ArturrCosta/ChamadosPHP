@@ -1,6 +1,8 @@
-<div>
-
-<h2>Entre em contato: 999203203 ou caraDaTi@empresa.com.br</h2>
-<img src="assets\img\logo.png" alt="logo">
-
+        <footer class="site-footer">
+            Setor de TI da Firma · Suporte interno
+        </footer>
+    </main>
 </div>
+<script src="<?= h(app_url('assets/js/script.js')) ?>"></script>
+</body>
+</html>

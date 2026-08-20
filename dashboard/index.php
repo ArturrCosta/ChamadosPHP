@@ -1,119 +1,74 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<?php
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Setor de TI</title>
+declare(strict_types=1);
 
-    <link rel="stylesheet" href="../assets/css/style.css">
-</head>
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/database.php';
+require_login();
 
-<body>
+$user = current_user();
+$where = is_ti() ? '' : ' WHERE c.usuario_id = :usuario_id';
+$params = is_ti() ? [] : ['usuario_id' => $user['id']];
 
-<div class="layout">
+$stmt = db()->prepare(
+    "SELECT
+        SUM(c.status = 'aberto') AS abertos,
+        SUM(c.status = 'em_andamento') AS em_andamento,
+        SUM(c.status = 'resolvido') AS resolvidos,
+        SUM(c.prioridade = 'urgente' AND c.status NOT IN ('resolvido', 'cancelado')) AS urgentes
+     FROM chamados c{$where}"
+);
+$stmt->execute($params);
+$totals = $stmt->fetch() ?: [];
 
-    <aside class="sidebar">
+$latestStmt = db()->prepare(
+    "SELECT c.id, c.titulo, c.prioridade, c.status, c.data_abertura, u.nome AS usuario_nome
+     FROM chamados c
+     INNER JOIN usuarios u ON u.id = c.usuario_id{$where}
+     ORDER BY c.data_abertura DESC LIMIT 5"
+);
+$latestStmt->execute($params);
+$latest = $latestStmt->fetchAll();
 
-        <h2>Setor de TI</h2>
+$pageTitle = 'Dashboard';
+require __DIR__ . '/../includes/header.php';
+?>
+<header class="page-header">
+    <h1>Dashboard</h1>
+    <p>Bem-vindo, <?= h($user['nome']) ?>. <?= is_ti() ? 'Visão geral dos chamados.' : 'Acompanhe seus chamados.' ?></p>
+</header>
 
-        <nav>
-            <a href="../dashboard/">Dashboard</a>
-            <a href="../chamados/">Chamados</a>
-            <a href="../chamados/novo.php">Novo chamado</a>
-            <a href="../usuarios/">Usuários</a>
-            <a href="../relatorios/">Relatórios</a>
-            <a href="../logout.php">Sair</a>
-        </nav>
+<section class="cards">
+    <div class="card"><span>Chamados abertos</span><strong><?= (int) ($totals['abertos'] ?? 0) ?></strong></div>
+    <div class="card"><span>Em andamento</span><strong><?= (int) ($totals['em_andamento'] ?? 0) ?></strong></div>
+    <div class="card"><span>Resolvidos</span><strong><?= (int) ($totals['resolvidos'] ?? 0) ?></strong></div>
+    <div class="card"><span>Urgentes ativos</span><strong><?= (int) ($totals['urgentes'] ?? 0) ?></strong></div>
+</section>
 
-    </aside>
-
-    <main class="content">
-
-        <header class="page-header">
-            <div>
-                <h1>Dashboard</h1>
-                <p>Bem-vindo ao Setor de TI da Firma.</p>
-            </div>
-        </header>
-
-        <section class="cards">
-
-            <div class="card">
-                <span>Chamados abertos</span>
-                <strong>8</strong>
-            </div>
-
-            <div class="card">
-                <span>Em andamento</span>
-                <strong>5</strong>
-            </div>
-
-            <div class="card">
-                <span>Resolvidos</span>
-                <strong>32</strong>
-            </div>
-
-            <div class="card">
-                <span>Urgentes</span>
-                <strong>2</strong>
-            </div>
-
-        </section>
-
-        <section class="dashboard-section">
-
-            <div class="section-header">
-                <h2>Últimos chamados</h2>
-
-                <a href="../chamados/novo.php" class="btn">
-                    Novo chamado
-                </a>
-            </div>
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Problema</th>
-                        <th>Prioridade</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <tr>
-                        <td>#0012</td>
-                        <td>Computador não liga</td>
-                        <td>Alta</td>
-                        <td>Em andamento</td>
-                    </tr>
-
-                    <tr>
-                        <td>#0011</td>
-                        <td>Problema na impressora</td>
-                        <td>Média</td>
-                        <td>Aberto</td>
-                    </tr>
-
-                    <tr>
-                        <td>#0010</td>
-                        <td>Instalação de software</td>
-                        <td>Baixa</td>
-                        <td>Resolvido</td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </section>
-
-    </main>
-
-</div>
-
-</body>
-</html>
+<section class="dashboard-section">
+    <div class="section-header">
+        <h2>Últimos chamados</h2>
+        <a href="<?= h(app_url('chamados/novo.php')) ?>" class="btn">Novo chamado</a>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>ID</th><?php if (is_ti()): ?><th>Funcionário</th><?php endif; ?><th>Problema</th><th>Prioridade</th><th>Status</th><th>Data</th></tr></thead>
+            <tbody>
+            <?php if (!$latest): ?>
+                <tr><td colspan="<?= is_ti() ? 6 : 5 ?>" class="empty-state">Nenhum chamado encontrado.</td></tr>
+            <?php endif; ?>
+            <?php foreach ($latest as $call): ?>
+                <tr>
+                    <td><a href="<?= h(app_url('chamados/editar.php?id=' . $call['id'])) ?>">#<?= str_pad((string) $call['id'], 4, '0', STR_PAD_LEFT) ?></a></td>
+                    <?php if (is_ti()): ?><td><?= h($call['usuario_nome']) ?></td><?php endif; ?>
+                    <td><?= h($call['titulo']) ?></td>
+                    <td><span class="badge priority-<?= h($call['prioridade']) ?>"><?= h(priority_label($call['prioridade'])) ?></span></td>
+                    <td><span class="badge status-<?= h($call['status']) ?>"><?= h(status_label($call['status'])) ?></span></td>
+                    <td><?= h(date('d/m/Y H:i', strtotime($call['data_abertura']))) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+<?php require __DIR__ . '/../includes/footer.php'; ?>
