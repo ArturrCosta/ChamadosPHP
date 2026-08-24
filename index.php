@@ -13,6 +13,15 @@ $error = '';
 $flash = get_flash();
 $documento = '';
 
+try {
+    $hasAdmin = (int) db()->query("SELECT COUNT(*) FROM usuarios WHERE tipo = 'ti' AND ativo = 1")->fetchColumn() > 0;
+    if (!$hasAdmin) {
+        redirect('setup_admin.php');
+    }
+} catch (RuntimeException $exception) {
+    $error = $exception->getMessage();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf();
     $documento = trim((string) ($_POST['documento'] ?? ''));
